@@ -5,6 +5,9 @@ FROM node:20-alpine AS base
 FROM base AS deps
 WORKDIR /app
 
+# Install build dependencies for native modules (usb, etc.)
+RUN apk add --no-cache python3 make g++ linux-headers eudev-dev
+
 # Copy package files
 COPY package.json package-lock.json* ./
 RUN npm ci
