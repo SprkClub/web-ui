@@ -18,8 +18,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma Client
-RUN npx prisma generate
+# Format and generate Prisma Client
+RUN npx prisma format && npx prisma generate
 
 # Build Next.js
 RUN npm run build
