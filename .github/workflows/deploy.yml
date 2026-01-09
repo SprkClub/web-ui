@@ -65,7 +65,7 @@ jobs:
             docker run -d \
               --name nextjs-app \
               --restart unless-stopped \
-              --network traefik-network \
+              --network traefik_web \
               -v /root/nextjs-app/.env:/app/.env:ro \
               -l "traefik.enable=true" \
               -l "traefik.http.routers.nextjs-prod.rule=Host(\`sprkclub.fun\`)" \
