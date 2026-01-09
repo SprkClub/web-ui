@@ -54,6 +54,9 @@ jobs:
             echo "🛑 Stopping old container..."
             docker stop nextjs-app 2>/dev/null || true
             docker rm nextjs-app 2>/dev/null || true
+
+            echo "🗑️ Removing unused images..."
+            docker image prune -af
             
             echo "📥 Pulling new image..."
             docker pull $IMAGE_NAME
@@ -62,8 +65,13 @@ jobs:
             docker run -d \
               --name nextjs-app \
               --restart unless-stopped \
-              -p 3000:3000 \
+              --network traefik-network \
               -v /root/nextjs-app/.env:/app/.env:ro \
+              -l "traefik.enable=true" \
+              -l "traefik.http.routers.nextjs-prod.rule=Host(\`sprkclub.fun\`)" \
+              -l "traefik.http.routers.nextjs-prod.entrypoints=websecure" \
+              -l "traefik.http.routers.nextjs-prod.tls.certresolver=letsencrypt" \
+              -l "traefik.http.services.nextjs-prod.loadbalancer.server.port=3000" \
               $IMAGE_NAME
             
             sleep 10
