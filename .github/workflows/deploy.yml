@@ -1,0 +1,139 @@
+name: "Deploy Next.js App to VPS"
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  build_push:
+    name: Build and Push Next.js Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and Push Docker Image
+        run: |
+          export IMAGE_NAME=$(echo "ghcr.io/${{ github.repository }}:nextjs-latest" | tr '[:upper:]' '[:lower:]')
+          echo "🔨 Building Docker image for Next.js app..."
+          docker build -t $IMAGE_NAME .
+          echo "📦 Pushing to GitHub Container Registry..."
+          docker push $IMAGE_NAME
+          echo "✅ Image pushed: $IMAGE_NAME"
+
+  deploy:
+    name: Deploy Next.js to VPS
+    runs-on: ubuntu-latest
+    needs: build_push
+
+    steps:
+      - name: Deploy Next.js App to Hostinger VPS
+        uses: appleboy/ssh-action@v1.0.0
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          envs: GHCR_TOKEN,GHCR_USERNAME
+          script: |
+            IMAGE_NAME=$(echo "ghcr.io/${{ github.repository }}:nextjs-latest" | tr '[:upper:]' '[:lower:]')
+
+            echo "⚛️ Deploying Next.js Application..."
+            echo "============================================"
+
+            echo "🛑 Stopping old Next.js container..."
+            docker stop nextjs-app 2>/dev/null || true
+            docker rm nextjs-app 2>/dev/null || true
+
+            echo "🗑️ Removing old image..."
+            docker image rm $IMAGE_NAME 2>/dev/null || true
+
+            echo "🔐 Logging into GHCR..."
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+
+            echo "📥 Pulling new Next.js image..."
+            docker pull $IMAGE_NAME
+
+            echo "📋 Checking for .env file..."
+            if [ -f /root/nextjs-app/.env ]; then
+              echo "✅ .env file found at /root/nextjs-app/.env"
+            else
+              echo "⚠️ WARNING: .env file not found!"
+              echo "Please create /root/nextjs-app/.env with your configuration"
+              exit 1
+            fi
+
+            echo "🚀 Starting Next.js container..."
+            docker run -d \
+              --name nextjs-app \
+              --restart unless-stopped \
+              -p 3000:3000 \
+              -v /root/nextjs-app/.env:/app/.env:ro \
+              $IMAGE_NAME
+
+            echo "⏳ Waiting for Next.js to initialize..."
+            sleep 15
+
+            echo "🏥 Checking Next.js container status..."
+            if docker ps | grep -q nextjs-app; then
+              echo "✅ Next.js container is running!"
+              echo ""
+              
+              echo "🌐 Testing HTTP endpoint..."
+              sleep 5
+              if curl -f http://localhost:3000 > /dev/null 2>&1; then
+                echo "✅ Next.js is responding to HTTP requests!"
+              else
+                echo "⚠️ Warning: Container is running but HTTP endpoint not responding yet"
+                echo "   (This is normal if Next.js is still building)"
+              fi
+              
+              echo ""
+              echo "📋 Next.js logs (last 30 lines):"
+              echo "============================================"
+              docker logs nextjs-app --tail 30
+              echo "============================================"
+              echo ""
+              echo "📊 Container details:"
+              docker ps --filter "name=nextjs-app" --format "table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Names}}\t{{.Ports}}"
+              echo ""
+              echo "🧹 Cleaning up old images..."
+              docker image prune -f
+              echo ""
+              echo "🎉 Next.js Deployment Successful!"
+              echo ""
+              echo "🔗 Your app should be accessible at:"
+              echo "   http://YOUR_VPS_IP:3000"
+              echo ""
+              echo "🔧 Useful commands for troubleshooting:"
+              echo "  View logs: docker logs nextjs-app -f"
+              echo "  Restart app: docker restart nextjs-app"
+              echo "  Stop app: docker stop nextjs-app"
+              echo "  Check status: docker ps | grep nextjs-app"
+              echo "  Test endpoint: curl http://localhost:3000"
+              exit 0
+            else
+              echo "💥 DEPLOYMENT FAILED: Next.js container is not running"
+              echo ""
+              echo "📋 Full container logs:"
+              echo "============================================"
+              docker logs nextjs-app --tail 100
+              echo "============================================"
+              echo ""
+              echo "🔍 Checking for error patterns..."
+              docker logs nextjs-app 2>&1 | grep -i "error\|fail\|exception" || echo "No obvious errors found in logs"
+              exit 1
+            fi
