@@ -1,8 +1,97 @@
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "sqlite"; url = env("DATABASE_URL") }
-model User { id String @id @default(cuid()) twitterId String? @unique username String? @unique displayName String? profileImage String? walletAddress String? @unique walletType String? role String @default("user") isVerified Boolean @default(false) isBanned Boolean @default(false) createdAt DateTime @default(now()) updatedAt DateTime @updatedAt posts Post[] creatorApplication CreatorApplication? creatorToken CreatorToken? likes Like[] followers Follow[] @relation("following") following Follow[] @relation("followers") }
-model Post { id String @id @default(cuid()) content String mediaUrl String? mediaType String? views Int @default(0) status String @default("active") createdAt DateTime @default(now()) updatedAt DateTime @updatedAt userId String user User @relation(fields: [userId], references: [id], onDelete: Cascade) likes Like[] }
-model Like { id String @id @default(cuid()) createdAt DateTime @default(now()) userId String postId String user User @relation(fields: [userId], references: [id], onDelete: Cascade) post Post @relation(fields: [postId], references: [id], onDelete: Cascade) @@unique([userId, postId]) }
-model Follow { id String @id @default(cuid()) createdAt DateTime @default(now()) followerId String followingId String follower User @relation("followers", fields: [followerId], references: [id], onDelete: Cascade) following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade) @@unique([followerId, followingId]) }
-model CreatorApplication { id String @id @default(cuid()) status String @default("pending") bio String category String socialLinks String? reason String? reviewedAt DateTime? reviewNote String? createdAt DateTime @default(now()) updatedAt DateTime @updatedAt userId String @unique user User @relation(fields: [userId], references: [id], onDelete: Cascade) }
-model CreatorToken { id String @id @default(cuid()) name String symbol String @unique description String? image String? poolAddress String? @unique mintAddress String? @unique marketCap Float @default(0) isFeatured Boolean @default(false) isLive Boolean @default(false) createdAt DateTime @default(now()) updatedAt DateTime @updatedAt userId String @unique user User @relation(fields: [userId], references: [id], onDelete: Cascade) }
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String               @id @default(cuid())
+  twitterId          String?              @unique
+  username           String?              @unique
+  displayName        String?
+  profileImage       String?
+  walletAddress      String?              @unique
+  walletType         String?
+  role               String               @default("user")
+  isVerified         Boolean              @default(false)
+  isBanned           Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  posts              Post[]
+  creatorApplication CreatorApplication?
+  creatorToken       CreatorToken?
+  likes              Like[]
+  followers          Follow[]             @relation("following")
+  following          Follow[]             @relation("followers")
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  content   String
+  mediaUrl  String?
+  mediaType String?
+  views     Int      @default(0)
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes     Like[]
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String
+  postId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  followerId  String
+  followingId String
+  follower    User     @relation("followers", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+model CreatorApplication {
+  id         String    @id @default(cuid())
+  status     String    @default("pending")
+  bio        String
+  category   String
+  socialLinks String?
+  reason     String?
+  reviewedAt DateTime?
+  reviewNote String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  userId     String    @unique
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CreatorToken {
+  id          String   @id @default(cuid())
+  name        String
+  symbol      String   @unique
+  description String?
+  image       String?
+  poolAddress String?  @unique
+  mintAddress String?  @unique
+  marketCap   Float    @default(0)
+  isFeatured  Boolean  @default(false)
+  isLive      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
