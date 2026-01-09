@@ -11,7 +11,8 @@
   "dependencies": {
     "@hugeicons/core-free-icons": "^2.0.0",
     "@hugeicons/react": "^1.1.1",
-    "@prisma/client": "^7.2.0",
+    "@prisma/client": "^6.0.0",
+    "prisma": "^6.0.0",
     "@privy-io/react-auth": "^3.10.0",
     "@privy-io/server-auth": "^1.32.5",
     "@solana-program/memo": "^0.10.0",
@@ -29,7 +30,6 @@
     "mongodb": "^7.0.0",
     "mongoose": "^9.0.2",
     "next": "16.0.3",
-    "prisma": "^7.2.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "tweetnacl": "^1.0.3"
