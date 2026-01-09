@@ -48,22 +48,32 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
-          script: |
+          run: |
+            set -e
+            
             IMAGE_NAME=$(echo "ghcr.io/${{ github.repository }}:nextjs-latest" | tr '[:upper:]' '[:lower:]')
-            
+            BACKUP_IMAGE="nextjs-backup:latest"
+            CONTAINER_NAME="nextjs-app"
+        
+            echo "📦 Getting current running image..."
+            OLD_IMAGE=$(docker inspect $CONTAINER_NAME --format='{{.Config.Image}}' 2>/dev/null || true)
+        
+            if [ -n "$OLD_IMAGE" ]; then
+              echo "🔖 Tagging old image as backup..."
+              docker tag $OLD_IMAGE $BACKUP_IMAGE
+            fi
+        
             echo "🛑 Stopping old container..."
-            docker stop nextjs-app 2>/dev/null || true
-            docker rm nextjs-app 2>/dev/null || true
-
-            echo "🗑️ Removing unused images..."
-            docker image prune -af
-            
+            docker stop $CONTAINER_NAME 2>/dev/null || true
+            docker rm $CONTAINER_NAME 2>/dev/null || true
+        
             echo "📥 Pulling new image..."
             docker pull $IMAGE_NAME
-            
+        
             echo "🚀 Starting new container..."
+            set +e
             docker run -d \
-              --name nextjs-app \
+              --name $CONTAINER_NAME \
               --restart unless-stopped \
               --network traefik_web \
               -p 3000:3000 \
@@ -76,14 +86,39 @@ jobs:
               -l "traefik.http.routers.nextjs-prod.middlewares=redirect-to-https" \
               -l "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https" \
               $IMAGE_NAME
-            
+        
             sleep 10
-            
-            if docker ps | grep -q nextjs-app; then
+        
+            if docker ps | grep -q $CONTAINER_NAME; then
               echo "✅ Deployment successful!"
-              docker logs nextjs-app --tail 20
+              docker logs $CONTAINER_NAME --tail 20
+        
+              echo "🧹 Removing backup image..."
+              docker rmi $BACKUP_IMAGE 2>/dev/null || true
+        
             else
-              echo "❌ Deployment failed!"
-              docker logs nextjs-app
+              echo "❌ Deployment failed! Rolling back..."
+        
+              echo "🗑️ Deleting broken image..."
+              docker rmi $IMAGE_NAME 2>/dev/null || true
+        
+              echo "🔁 Starting container from backup image..."
+              docker run -d \
+                --name $CONTAINER_NAME \
+                --restart unless-stopped \
+                --network traefik_web \
+                -p 3000:3000 \
+                -v /root/nextjs-app/.env:/app/.env:ro \
+                -l "traefik.enable=true" \
+                -l 'traefik.http.routers.nextjs-prod.rule=Host("sprkclub.fun")' \
+                -l "traefik.http.routers.nextjs-prod.entrypoints=websecure" \
+                -l "traefik.http.routers.nextjs-prod.tls.certresolver=letsencrypt" \
+                -l "traefik.http.services.nextjs-prod.loadbalancer.server.port=3000" \
+                -l "traefik.http.routers.nextjs-prod.middlewares=redirect-to-https" \
+                -l "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https" \
+                $BACKUP_IMAGE
+        
+              echo "♻ Rollback completed!"
+              docker logs $CONTAINER_NAME --tail 20
               exit 1
             fi
