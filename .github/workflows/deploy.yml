@@ -66,12 +66,15 @@ jobs:
               --name nextjs-app \
               --restart unless-stopped \
               --network traefik_web \
+              -p 3000:3000 \
               -v /root/nextjs-app/.env:/app/.env:ro \
               -l "traefik.enable=true" \
-              -l "traefik.http.routers.nextjs-prod.rule=Host(\`sprkclub.fun\`)" \
+              -l 'traefik.http.routers.nextjs-prod.rule=Host("sprkclub.fun")' \
               -l "traefik.http.routers.nextjs-prod.entrypoints=websecure" \
               -l "traefik.http.routers.nextjs-prod.tls.certresolver=letsencrypt" \
               -l "traefik.http.services.nextjs-prod.loadbalancer.server.port=3000" \
+              -l "traefik.http.routers.nextjs-prod.middlewares=redirect-to-https" \
+              -l "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https" \
               $IMAGE_NAME
             
             sleep 10
