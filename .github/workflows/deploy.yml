@@ -24,7 +24,7 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          export IMAGE_NAME=$(echo "ghcr.io/${{ github.repository }}:nextjs-latest" | tr '[:upper:]' '[:lower:]')
+          export IMAGE_NAME=$(echo "ghcr.io/${{ github.repository }}:web-ui-latest" | tr '[:upper:]' '[:lower:]')
           echo "🔨 Building Docker image for Next.js app..."
           docker build -t $IMAGE_NAME .
           echo "📦 Pushing to GitHub Container Registry..."
@@ -49,7 +49,7 @@ jobs:
           port: 22
           envs: GHCR_TOKEN,GHCR_USERNAME
           script: |
-            IMAGE_NAME=$(echo "ghcr.io/${{ github.repository }}:nextjs-latest" | tr '[:upper:]' '[:lower:]')
+            IMAGE_NAME=$(echo "ghcr.io/${{ github.repository }}:web-ui-latest" | tr '[:upper:]' '[:lower:]')
 
             echo "⚛️ Deploying Next.js Application..."
             echo "============================================"
@@ -68,11 +68,11 @@ jobs:
             docker pull $IMAGE_NAME
 
             echo "📋 Checking for .env file..."
-            if [ -f /root/nextjs-app/.env ]; then
-              echo "✅ .env file found at /root/nextjs-app/.env"
+            if [ -f /root/web-ui/.env ]; then
+              echo "✅ .env file found at /root/web-ui/.env"
             else
               echo "⚠️ WARNING: .env file not found!"
-              echo "Please create /root/nextjs-app/.env with your configuration"
+              echo "Please create /root/web-ui/.env with your configuration"
               exit 1
             fi
 
@@ -81,7 +81,7 @@ jobs:
               --name nextjs-app \
               --restart unless-stopped \
               -p 3000:3000 \
-              -v /root/nextjs-app/.env:/app/.env:ro \
+              -v /root/web-ui/.env:/app/.env:ro \
               $IMAGE_NAME
 
             echo "⏳ Waiting for Next.js to initialize..."
