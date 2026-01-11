@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Trends.fun",
+  title: "sprkclub.fun",
   description: "Discover crypto culture in real time",
 };
 
@@ -26,9 +26,7 @@ export default function RootLayout({ children }) {
         suppressHydrationWarning
       >
         <PrivyProvider>
-          <LoginModalProvider>
-            {children}
-          </LoginModalProvider>
+          <LoginModalProvider>{children}</LoginModalProvider>
         </PrivyProvider>
       </body>
     </html>
