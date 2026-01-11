@@ -8,7 +8,7 @@ on:
 
 permissions:
   contents: read
-  packages: write  # ← CRITICAL for GHCR!
+  packages: write
 
 jobs:
   build_push:
@@ -27,10 +27,21 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Docker Image
+        env:
+          # These are passed as build args for NEXT_PUBLIC_* variables
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+          NEXT_PUBLIC_PRIVY_APP_ID: ${{ secrets.NEXT_PUBLIC_PRIVY_APP_ID }}
+          NEXT_PUBLIC_TWITTER_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_TWITTER_CLIENT_ID }}
+          NEXT_PUBLIC_TWITTER_REDIRECT_URI: ${{ secrets.NEXT_PUBLIC_TWITTER_REDIRECT_URI }}
         run: |
           export IMAGE_NAME=$(echo "ghcr.io/${{ github.repository }}:nextjs-latest" | tr '[:upper:]' '[:lower:]')
           echo "🔨 Building Docker image..."
-          docker build -t $IMAGE_NAME .
+          docker build \
+            --build-arg NEXT_PUBLIC_BASE_URL="$NEXT_PUBLIC_BASE_URL" \
+            --build-arg NEXT_PUBLIC_PRIVY_APP_ID="$NEXT_PUBLIC_PRIVY_APP_ID" \
+            --build-arg NEXT_PUBLIC_TWITTER_CLIENT_ID="$NEXT_PUBLIC_TWITTER_CLIENT_ID" \
+            --build-arg NEXT_PUBLIC_TWITTER_REDIRECT_URI="$NEXT_PUBLIC_TWITTER_REDIRECT_URI" \
+            -t $IMAGE_NAME .
           echo "📦 Pushing to GHCR..."
           docker push $IMAGE_NAME
           echo "✅ Done!"
@@ -48,7 +59,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
-          run: |
+          script: |
             set -e
             
             IMAGE_NAME=$(echo "ghcr.io/${{ github.repository }}:nextjs-latest" | tr '[:upper:]' '[:lower:]')
@@ -77,9 +88,9 @@ jobs:
               --restart unless-stopped \
               --network traefik_web \
               -p 3000:3000 \
-              -v /root/nextjs-app/.env:/app/.env:ro \
+              -v /root/web-ui/.env:/app/.env:ro \
               -l "traefik.enable=true" \
-              -l 'traefik.http.routers.nextjs-prod.rule=Host("sprkclub.fun")' \
+              -l 'traefik.http.routers.nextjs-prod.rule=Host(`sprkclub.fun`)' \
               -l "traefik.http.routers.nextjs-prod.entrypoints=websecure" \
               -l "traefik.http.routers.nextjs-prod.tls.certresolver=letsencrypt" \
               -l "traefik.http.services.nextjs-prod.loadbalancer.server.port=3000" \
@@ -108,9 +119,9 @@ jobs:
                 --restart unless-stopped \
                 --network traefik_web \
                 -p 3000:3000 \
-                -v /root/nextjs-app/.env:/app/.env:ro \
+                -v /root/web-ui/.env:/app/.env:ro \
                 -l "traefik.enable=true" \
-                -l 'traefik.http.routers.nextjs-prod.rule=Host("sprkclub.fun")' \
+                -l 'traefik.http.routers.nextjs-prod.rule=Host(`sprkclub.fun`)' \
                 -l "traefik.http.routers.nextjs-prod.entrypoints=websecure" \
                 -l "traefik.http.routers.nextjs-prod.tls.certresolver=letsencrypt" \
                 -l "traefik.http.services.nextjs-prod.loadbalancer.server.port=3000" \
