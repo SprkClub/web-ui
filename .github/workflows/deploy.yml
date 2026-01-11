@@ -65,8 +65,10 @@ jobs:
             BACKUP_IMAGE="nextjs-backup:latest"
             CONTAINER_NAME="nextjs-app"
 
-            # 1. Create the .env file on the VPS temporarily from the secret
-            echo "${{ secrets.ENV_FILE }}" > .env.production
+            # 1. Create persistent .env file on VPS
+            echo "📝 Updating .env file..."
+            mkdir -p /root/web-ui
+            echo "${{ secrets.ENV_FILE }}" > /root/web-ui/.env
 
             echo "📦 Preparing images..."
             OLD_IMAGE=$(docker inspect $CONTAINER_NAME --format='{{.Config.Image}}' 2>/dev/null || true)
@@ -88,7 +90,7 @@ jobs:
               --restart unless-stopped \
               --network traefik_web \
               -p 3000:3000 \
-              --env-file .env.production \
+              -v /root/web-ui/.env:/app/.env:ro \
               -l "traefik.enable=true" \
               -l 'traefik.http.routers.nextjs-prod.rule=Host(`sprkclub.fun`)' \
               -l "traefik.http.routers.nextjs-prod.entrypoints=websecure" \
@@ -102,17 +104,25 @@ jobs:
 
             if docker ps | grep -q $CONTAINER_NAME; then
               echo "✅ Deployment successful!"
-              rm .env.production
+              docker logs $CONTAINER_NAME --tail 20
               docker rmi $BACKUP_IMAGE 2>/dev/null || true
             else
               echo "❌ Deployment failed! Rolling back..."
+              docker rmi $IMAGE_NAME 2>/dev/null || true
               docker run -d \
                 --name $CONTAINER_NAME \
                 --restart unless-stopped \
                 --network traefik_web \
                 -p 3000:3000 \
-                --env-file .env.production \
+                -v /root/web-ui/.env:/app/.env:ro \
+                -l "traefik.enable=true" \
+                -l 'traefik.http.routers.nextjs-prod.rule=Host(`sprkclub.fun`)' \
+                -l "traefik.http.routers.nextjs-prod.entrypoints=websecure" \
+                -l "traefik.http.routers.nextjs-prod.tls.certresolver=letsencrypt" \
+                -l "traefik.http.services.nextjs-prod.loadbalancer.server.port=3000" \
+                -l "traefik.http.routers.nextjs-prod.middlewares=redirect-to-https" \
+                -l "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https" \
                 $BACKUP_IMAGE
-              rm .env.production
+              docker logs $CONTAINER_NAME --tail 20
               exit 1
             fi
