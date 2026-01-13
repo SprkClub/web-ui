@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "sprkclub.fun",
+  title: "Sprkclub.fun",
   description: "Discover crypto culture in real time",
 };
 
