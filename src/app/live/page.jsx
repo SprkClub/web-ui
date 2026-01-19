@@ -5,6 +5,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import GoldenCheckmark from "@/components/GoldenCheckmark";
 import RequireAuth from "@/components/RequireAuth";
+import GoLiveBroadcaster from "@/components/GoLiveBroadcaster";
 import { Icons } from "@/lib/icons";
 
 const navItems = [
@@ -32,6 +33,7 @@ const liveStreams = [
     viewers: 12500,
     startedAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
     category: "Crypto Talk",
+    channelName: "stream_solana_live",
   },
   {
     id: 2,
@@ -47,6 +49,7 @@ const liveStreams = [
     viewers: 8420,
     startedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
     category: "Finance",
+    channelName: "stream_vaneck_live",
   },
   {
     id: 3,
@@ -62,6 +65,7 @@ const liveStreams = [
     viewers: 5890,
     startedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     category: "Trading",
+    channelName: "stream_cryptodaily_live",
   },
   {
     id: 4,
@@ -77,6 +81,7 @@ const liveStreams = [
     viewers: 3420,
     startedAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
     category: "NFTs",
+    channelName: "stream_nftinsider_live",
   },
   {
     id: 5,
@@ -92,6 +97,7 @@ const liveStreams = [
     viewers: 2150,
     startedAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
     category: "DeFi",
+    channelName: "stream_defialpha_live",
   },
   {
     id: 6,
@@ -107,6 +113,7 @@ const liveStreams = [
     viewers: 1820,
     startedAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
     category: "Development",
+    channelName: "stream_web3dev_live",
   },
 ];
 
@@ -134,7 +141,7 @@ function formatDuration(dateString) {
 function LiveStreamCard({ stream }) {
   return (
     <Link
-      href={`/creator/${stream.creator.username}`}
+      href={`/live/${stream.channelName || `stream_${stream.id}`}`}
       className="group block"
     >
       <div className="relative rounded-xl overflow-hidden bg-white/5 border border-white/10 hover:border-white/20 transition">
@@ -274,19 +281,11 @@ export default function LivePage() {
               </div>
             )}
 
-            {/* Coming Soon Section */}
+            {/* Go Live Section */}
             <div className="mt-6 flex-shrink-0">
-              <h2 className="text-lg font-semibold text-white mb-4">Coming Soon</h2>
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
-                <div className="w-12 h-12 mx-auto rounded-full bg-purple-500/20 flex items-center justify-center mb-3">
-                  <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-white mb-1">Start Your Own Stream</h3>
-                <p className="text-white/50 text-sm">
-                  Verified creators will soon be able to go live and connect with their audience in real-time.
-                </p>
+              <h2 className="text-lg font-semibold text-white mb-4">Start Your Own Stream</h2>
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                <GoLiveBroadcaster />
               </div>
             </div>
           </main>

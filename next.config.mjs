@@ -12,6 +12,8 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
+  // Turbopack config (empty to silence warning - using webpack for now)
+  turbopack: {},
   webpack: (config, { webpack, isServer }) => {
     // Ignore test-only dependencies
     config.plugins.push(
